@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>BEU SGPA Calculator — Grade Card Estimator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16213E;
+    --ink-soft:#2C3B63;
+    --paper:#FBF8F2;
+    --surface:#FFFFFF;
+    --paper-shade:#F1ECDD;
+    --seal:#B5253A;
+    --gold:#B9862E;
+    --slate:#5C6B8A;
+    --line:#D9D3C1;
+    --line-dark:#B9B199;
+    --good:#3F6B4A;
+    --ruled-line: rgba(90,80,50,0.05);
+    --display:'Source Serif 4', Georgia, serif;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+    --sans:'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ink:#ECE9DF;
+      --ink-soft:#C9CFE6;
+      --paper:#13141C;
+      --surface:#1B1E2A;
+      --paper-shade:#232739;
+      --seal:#E6707B;
+      --gold:#D8AC5C;
+      --slate:#9AA2C0;
+      --line:#333A52;
+      --line-dark:#454E70;
+      --good:#7ECB92;
+      --ruled-line: rgba(255,255,255,0.035);
+    }
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper) 0%, var(--paper) 100%),
+      repeating-linear-gradient(0deg, transparent, transparent 27px, var(--ruled-line) 28px);
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    transition:background .2s, color .2s;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+
+  .page{ max-width:1100px; margin:0 auto; padding:28px 20px 80px; }
+
+  /* ---------- Letterhead ---------- */
+  .letterhead{
+    text-align:center;
+    padding:34px 20px 26px;
+    border-bottom:3px double var(--ink);
+    margin-bottom:28px;
+  }
+  .letterhead .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--seal); margin-bottom:10px;
+  }
+  .letterhead h1{
+    font-family:var(--display); font-weight:700; font-size:clamp(28px,5vw,44px);
+    margin:0 0 8px; letter-spacing:-0.01em;
+  }
+  .letterhead p{
+    font-family:var(--sans); font-size:14.5px; color:var(--slate); margin:0;
+    max-width:520px; margin-inline:auto; line-height:1.5;
+  }
+  .reg-no{
+    font-family:var(--mono); font-size:11px; color:var(--line-dark);
+    margin-top:14px; letter-spacing:.05em;
+  }
+
+  /* ---------- Student details ---------- */
+  .student-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:2px;
+    padding:16px 20px; margin-bottom:18px;
+    display:grid; grid-template-columns:1fr 1fr; gap:14px;
+  }
+  @media (max-width:600px){ .student-card{grid-template-columns:1fr;} }
+  .student-card label{
+    display:block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--slate); margin-bottom:6px;
+  }
+  .student-card input{
+    width:100%; border:none; border-bottom:1px dashed var(--line-dark);
+    background:transparent; font-family:var(--sans); font-size:14px;
+    padding:5px 2px; color:var(--ink);
+  }
+  .student-card input:focus{ outline:none; border-bottom-color:var(--seal); }
+  .student-card .hint{
+    grid-column:1 / -1; font-family:var(--sans); font-size:11.5px; color:var(--line-dark);
+    margin-top:-4px;
+  }
+
+  /* ---------- Setup / steppers ---------- */
+  .setup{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:28px; }
+  @media (max-width:600px){ .setup{grid-template-columns:1fr;} }
+
+  .field-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:2px;
+    padding:18px 20px; box-shadow:0 1px 0 rgba(0,0,0,0.04);
+  }
+  .field-card label{
+    display:block; font-family:var(--mono); font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--slate); margin-bottom:12px;
+  }
+  .stepper{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .stepper button{
+    width:38px;height:38px; border-radius:50%; border:1.5px solid var(--ink);
+    background:var(--paper); color:var(--ink); font-family:var(--display);
+    font-size:20px; line-height:1; cursor:pointer; transition:background .15s, transform .1s;
+  }
+  .stepper button:hover{background:var(--ink);color:var(--paper);}
+  .stepper button:active{transform:scale(0.92);}
+  .stepper button:focus-visible{ outline:2px solid var(--seal); outline-offset:2px; }
+  .stepper .count{
+    font-family:var(--display); font-size:32px; font-weight:600; min-width:46px; text-align:center;
+  }
+
+  /* ---------- Ledger layout ---------- */
+  .ledger-wrap{ display:grid; grid-template-columns:1fr 300px; gap:22px; align-items:start; }
+  @media (max-width:860px){ .ledger-wrap{grid-template-columns:1fr;} }
+
+  .ledger{ background:var(--surface); border:1px solid var(--line); overflow-x:auto; margin-bottom:20px; }
+  .ledger-title{
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--paper); background:var(--ink); padding:10px 16px;
+    display:flex; justify-content:space-between; gap:10px;
+  }
+  .ledger-title .subtotal{ opacity:.75; font-size:10.5px; }
+
+  table{ width:100%; border-collapse:collapse; min-width:600px; }
+  thead th{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+    text-align:left; color:var(--slate); padding:10px 10px; border-bottom:1.5px solid var(--ink);
+    background:var(--paper-shade); white-space:nowrap;
+  }
+  tbody td{ padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tbody tr:nth-child(even){ background:var(--paper-shade); }
+  tbody tr{ break-inside:avoid; }
+
+  .subject-name-input{
+    width:100%; min-width:120px; border:none; border-bottom:1px dashed var(--line-dark);
+    background:transparent; font-family:var(--sans); font-size:13.5px; padding:4px 2px; color:var(--ink);
+  }
+  .subject-name-input:focus{ outline:none; border-bottom-color:var(--seal); }
+
+  .num-input{
+    width:60px; border:1px solid var(--line); background:var(--paper); font-family:var(--mono);
+    font-size:13.5px; padding:6px 6px; text-align:right; color:var(--ink); border-radius:2px;
+  }
+  .num-input:focus{ outline:none; border-color:var(--seal); background:var(--surface); }
+
+  .no-spin::-webkit-outer-spin-button, .no-spin::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .no-spin[type=number]{ -moz-appearance:textfield; appearance:textfield; }
+
+  .full-marks-wrap{ display:flex; align-items:center; gap:6px; }
+  .full-marks-select{
+    border:1px solid var(--line); background:var(--paper); font-family:var(--mono); font-size:12.5px;
+    padding:6px 4px; color:var(--ink); border-radius:2px;
+  }
+  .full-marks-select:focus{ outline:none; border-color:var(--seal); background:var(--surface); }
+  .full-marks-custom{ width:52px; display:none; }
+  .full-marks-custom.show{ display:inline-block; }
+
+  td.type-tag{ font-family:var(--mono); font-size:11px; color:var(--slate); }
+
+  .grade-pill{
+    display:inline-flex; align-items:center; justify-content:center; min-width:34px;
+    padding:3px 8px; border-radius:2px; font-family:var(--mono); font-weight:600;
+    font-size:12.5px; letter-spacing:.02em;
+  }
+  .grade-pill.g10, .grade-pill.g9{ background:color-mix(in srgb, var(--good) 18%, transparent); color:var(--good); }
+  .grade-pill.g8, .grade-pill.g7{ background:color-mix(in srgb, var(--ink-soft) 14%, transparent); color:var(--ink-soft); }
+  .grade-pill.g6, .grade-pill.g5{ background:color-mix(in srgb, var(--gold) 20%, transparent); color:var(--gold); }
+  .grade-pill.g0{ background:color-mix(in srgb, var(--seal) 18%, transparent); color:var(--seal); }
+
+  .gp-cell{ font-family:var(--mono); text-align:right; color:var(--slate); font-size:12.5px; }
+
+  .row-remove{ background:none;border:none;color:var(--line-dark); cursor:pointer; font-size:15px; line-height:1; padding:2px 6px; }
+  .row-remove:hover{ color:var(--seal); }
+
+  /* ---------- Summary / stamp panel ---------- */
+  .summary{
+    position:sticky; top:20px; background:var(--surface); border:1px solid var(--line);
+    padding:22px 20px 26px; text-align:center;
+  }
+  .summary-title{
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--slate); margin-bottom:18px;
+  }
+
+  .stamp{ width:196px; height:196px; margin:0 auto 18px; position:relative; color:var(--seal); }
+  .stamp svg{ width:100%; height:100%; display:block; }
+  .stamp-value{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; transform:rotate(-7deg); color:var(--seal); pointer-events:none;
+  }
+  .stamp-value .num{ font-family:var(--display); font-weight:700; font-size:46px; line-height:1; }
+  .stamp-value .label{ font-family:var(--mono); font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; margin-top:4px; }
+
+  .summary-rows{
+    text-align:left; font-family:var(--mono); font-size:12.5px;
+    border-top:1px dashed var(--line-dark); padding-top:14px; margin-top:4px;
+  }
+  .summary-rows div{ display:flex; justify-content:space-between; padding:4px 0; color:var(--slate); }
+  .summary-rows div b{ color:var(--ink); font-weight:600; }
+
+  .status-note{
+    margin-top:14px; font-family:var(--sans); font-size:12px; color:var(--slate); line-height:1.5;
+    padding:10px 12px; background:var(--paper-shade); border-left:3px solid var(--gold); text-align:left;
+  }
+  .status-note.fail{ border-left-color:var(--seal); color:var(--seal); background:color-mix(in srgb, var(--seal) 12%, var(--surface)); }
+
+  .download-btn{
+    margin-top:16px; width:100%; font-family:var(--mono); font-size:11.5px; letter-spacing:.06em;
+    text-transform:uppercase; background:var(--ink); color:var(--paper); border:none;
+    padding:11px 14px; cursor:pointer; border-radius:2px; transition:opacity .15s;
+  }
+  .download-btn:hover{ opacity:.85; }
+  .download-hint{ margin-top:8px; font-family:var(--sans); font-size:10.5px; color:var(--line-dark); line-height:1.4; }
+
+  /* ---------- Legend ---------- */
+  .legend{ margin-top:6px; border:1px solid var(--line); background:var(--surface); }
+  .legend-grid{ display:grid; grid-template-columns:repeat(7,1fr); font-family:var(--mono); font-size:11.5px; }
+  @media (max-width:700px){ .legend-grid{grid-template-columns:repeat(4,1fr);} }
+  .legend-cell{ padding:10px 8px; text-align:center; border-right:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .legend-cell .pct{ color:var(--slate); font-size:10px; display:block; margin-top:3px; }
+  .legend-cell:last-child{ border-right:none; }
+
+  footer.disclaimer{
+    margin-top:38px; text-align:center; font-family:var(--sans); font-size:11.5px;
+    color:var(--line-dark); line-height:1.6;
+  }
+  footer.disclaimer strong{ color:var(--slate); }
+
+  /* ---------- Print / PDF export ---------- */
+  .watermark-print{ display:none; }
+
+  @media print{
+    body{ background:#fff !important; color:#111 !important; }
+    .no-print{ display:none !important; }
+    .ledger-wrap{ display:block; }
+    .summary{ position:static; margin-top:18px; }
+    .ledger{ overflow:visible; break-inside:avoid; margin-bottom:16px; }
+    .stepper button, .row-remove{ display:none !important; }
+
+    .watermark-print{
+      display:block; position:fixed; inset:0; pointer-events:none; z-index:9999; overflow:hidden;
+    }
+    .watermark-print .line{
+      position:absolute; left:50%; white-space:nowrap; transform:translateX(-50%) rotate(-28deg);
+      font-family:'IBM Plex Mono', monospace; font-size:20px; color:#B5253A; opacity:0.15;
+      letter-spacing:.08em;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="letterhead">
+    <div class="eyebrow">Provisional &middot; Not an Official Document</div>
+    <h1>SGPA Estimator</h1>
+    <p>For B.Tech students under Bihar Engineering University (BEU), Patna. Enter your expected marks and credits to estimate your Semester Grade Point Average.</p>
+    <div class="reg-no">FORM REF: BEU/SGPA-EST/2026 &nbsp;&middot;&nbsp; Based on BEU Absolute Grading Regulations</div>
+  </header>
+
+  <section class="student-card">
+    <div>
+      <label for="studentName">Name (for your copy)</label>
+      <input type="text" id="studentName" placeholder="e.g. Ankit Kumar" autocomplete="off">
+    </div>
+    <div>
+      <label for="studentRoll">Registration / Roll No.</label>
+      <input type="text" id="studentRoll" placeholder="e.g. 22105115XXX" autocomplete="off">
+    </div>
+    <div class="hint">Optional — only used to personalize the on-screen header and the watermark on your downloaded PDF.</div>
+  </section>
+
+  <section class="setup">
+    <div class="field-card">
+      <label for="theoryCount">Theory subjects this semester</label>
+      <div class="stepper">
+        <button type="button" id="theoryMinus" class="no-print" aria-label="Decrease theory subjects">&minus;</button>
+        <span class="count" id="theoryCount">5</span>
+        <button type="button" id="theoryPlus" class="no-print" aria-label="Increase theory subjects">&plus;</button>
+      </div>
+    </div>
+    <div class="field-card">
+      <label for="practicalCount">Practical / sessional subjects</label>
+      <div class="stepper">
+        <button type="button" id="practicalMinus" class="no-print" aria-label="Decrease practical subjects">&minus;</button>
+        <span class="count" id="practicalCount">3</span>
+        <button type="button" id="practicalPlus" class="no-print" aria-label="Increase practical subjects">&plus;</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="ledger-wrap">
+    <div>
+      <div class="ledger">
+        <div class="ledger-title">
+          <span>Theory Subjects</span>
+          <span class="subtotal" id="theorySubtotal">Credits 0 &middot; GP 0</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Subject</th><th>Credit</th><th>Full Marks</th><th>Marks Obtained</th><th>Grade</th><th>Grade&nbsp;Pts</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="rowsBodyTheory"></tbody>
+        </table>
+      </div>
+
+      <div class="ledger">
+        <div class="ledger-title">
+          <span>Practical / Sessional Subjects</span>
+          <span class="subtotal" id="practicalSubtotal">Credits 0 &middot; GP 0</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Subject</th><th>Credit</th><th>Full Marks</th><th>Marks Obtained</th><th>Grade</th><th>Grade&nbsp;Pts</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="rowsBodyPractical"></tbody>
+        </table>
+      </div>
+
+      <div class="legend">
+        <div class="ledger-title"><span>Grade Boundaries &mdash; BEU Absolute Grading (by %)</span></div>
+        <div class="legend-grid" id="legendGrid"></div>
+      </div>
+    </div>
+
+    <aside class="summary">
+      <div class="summary-title">Estimated Result</div>
+      <div class="stamp">
+        <svg viewBox="0 0 196 196">
+          <defs>
+            <path id="circlePath" d="M 98,98 m -78,0 a 78,78 0 1,1 156,0 a 78,78 0 1,1 -156,0" fill="none"/>
+          </defs>
+          <circle cx="98" cy="98" r="92" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.55"/>
+          <circle cx="98" cy="98" r="78" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 3" opacity="0.75"/>
+          <text font-family="IBM Plex Mono, monospace" font-size="8.3" letter-spacing="2.2" fill="currentColor" opacity="0.8">
+            <textPath href="#circlePath" startOffset="0%">
+              ESTIMATED &nbsp;&#9679;&nbsp; NOT OFFICIAL &nbsp;&#9679;&nbsp; BEU REGULATIONS &nbsp;&#9679;&nbsp;
+            </textPath>
+          </text>
+        </svg>
+        <div class="stamp-value">
+          <div class="num" id="sgpaValue">0.00</div>
+          <div class="label">SGPA</div>
+        </div>
+      </div>
+
+      <div class="summary-rows">
+        <div><span>Total credits</span> <b id="totalCredits">0</b></div>
+        <div><span>Weighted grade points</span> <b id="totalGP">0</b></div>
+        <div><span>Subjects entered</span> <b id="totalSubjects">0</b></div>
+      </div>
+
+      <div class="status-note" id="statusNote">Fill in marks and credits to see your estimate update live.</div>
+
+      <button type="button" class="download-btn no-print" id="downloadBtn">Download as PDF</button>
+      <div class="download-hint no-print">Opens your browser's print dialog — choose "Save as PDF". Your name/roll number are stamped as a watermark on the saved copy.</div>
+    </aside>
+  </section>
+
+  <footer class="disclaimer">
+    <strong>Disclaimer:</strong> This tool applies the SGPA formula and absolute grading bands published in BEU's B.Tech regulations (SGPA = &Sigma;(Credit &times; Grade Point) &divide; &Sigma;Credit) purely for self-estimation.<br>
+    It is not affiliated with or endorsed by Bihar Engineering University. Your official grade card from BEU / IntelliExams is the only valid record.
+  </footer>
+
+</div>
+
+<div class="watermark-print" id="watermarkPrint" aria-hidden="true"></div>
+
+<script>
+(function(){
+  // ---- Grading logic per BEU absolute grading regulation ----
+  // Theory fail threshold: <35% ; Practical/Sessional fail threshold: <40%
+  // Percentages are rounded to 2dp before comparison to avoid floating-point
+  // artifacts (e.g. 63/105*100 evaluating to 59.999999999999996 instead of 60),
+  // which was quietly bumping subjects into the wrong grade band.
+  function gradeFor(pctRaw, isPractical){
+    var pct = Math.round(pctRaw * 100) / 100;
+    if (pct >= 90) return {letter:'A+', point:10};
+    if (pct >= 80) return {letter:'A',  point:9};
+    if (pct >= 70) return {letter:'B',  point:8};
+    if (pct >= 60) return {letter:'C',  point:7};
+    if (pct >= 50) return {letter:'D',  point:6};
+    var passFloor = isPractical ? 40 : 35;
+    if (pct >= passFloor) return {letter:'P', point:5};
+    return {letter:'F', point:0};
+  }
+
+  var FULL_MARKS_PRESETS = [100, 75, 70, 60, 50, 40, 30, 25, 20];
+
+  var LEGEND = [
+    {label:'A+', pct:'90% and above'},
+    {label:'A',  pct:'80% – 89.9%'},
+    {label:'B',  pct:'70% – 79.9%'},
+    {label:'C',  pct:'60% – 69.9%'},
+    {label:'D',  pct:'50% – 59.9%'},
+    {label:'P',  pct:'35%(T)/40%(P) – 49.9%'},
+    {label:'F',  pct:'Below pass floor'}
+  ];
+
+  var legendGrid = document.getElementById('legendGrid');
+  LEGEND.forEach(function(g){
+    var cell = document.createElement('div');
+    cell.className = 'legend-cell';
+    cell.innerHTML = '<strong>' + g.label + '</strong><span class="pct">' + g.pct + '</span>';
+    legendGrid.appendChild(cell);
+  });
+
+  // ---- State ----
+  var state = { theory: [], practical: [] };
+
+  function makeRow(type, idx){
+    return {
+      type: type,
+      name: (type === 'theory' ? 'Theory Subject ' : 'Practical Subject ') + (idx + 1),
+      credit: type === 'theory' ? 4 : 1,
+      fullMarks: type === 'theory' ? 100 : 50,
+      marks: null,
+      els: null
+    };
+  }
+
+  function resizeArray(arr, count, type){
+    while (arr.length < count) arr.push(makeRow(type, arr.length));
+    arr.length = count;
+    return arr;
+  }
+
+  var theoryCountEl = document.getElementById('theoryCount');
+  var practicalCountEl = document.getElementById('practicalCount');
+  var THEORY_MIN=0, THEORY_MAX=14, PRAC_MIN=0, PRAC_MAX=10;
+  var theoryCount = 5, practicalCount = 3;
+
+  document.getElementById('theoryMinus').addEventListener('click', function(){ theoryCount = Math.max(THEORY_MIN, theoryCount - 1); syncCounts(); });
+  document.getElementById('theoryPlus').addEventListener('click', function(){ theoryCount = Math.min(THEORY_MAX, theoryCount + 1); syncCounts(); });
+  document.getElementById('practicalMinus').addEventListener('click', function(){ practicalCount = Math.max(PRAC_MIN, practicalCount - 1); syncCounts(); });
+  document.getElementById('practicalPlus').addEventListener('click', function(){ practicalCount = Math.min(PRAC_MAX, practicalCount + 1); syncCounts(); });
+
+  function syncCounts(){
+    theoryCountEl.textContent = theoryCount;
+    practicalCountEl.textContent = practicalCount;
+    resizeArray(state.theory, theoryCount, 'theory');
+    resizeArray(state.practical, practicalCount, 'practical');
+    renderRows();
+  }
+
+  var rowsBodyTheory = document.getElementById('rowsBodyTheory');
+  var rowsBodyPractical = document.getElementById('rowsBodyPractical');
+
+  function buildFullMarksControl(row){
+    var wrap = document.createElement('div');
+    wrap.className = 'full-marks-wrap';
+
+    var select = document.createElement('select');
+    select.className = 'full-marks-select';
+    select.setAttribute('aria-label', 'Full marks preset');
+    FULL_MARKS_PRESETS.forEach(function(v){
+      var opt = document.createElement('option');
+      opt.value = v; opt.textContent = v;
+      select.appendChild(opt);
+    });
+    var customOpt = document.createElement('option');
+    customOpt.value = 'custom'; customOpt.textContent = 'Custom…';
+    select.appendChild(customOpt);
+
+    var customInput = document.createElement('input');
+    customInput.type = 'number';
+    customInput.className = 'num-input full-marks-custom no-spin';
+    customInput.min = '1'; customInput.max = '500'; customInput.step = '1';
+    customInput.setAttribute('aria-label', 'Custom full marks');
+
+    if (FULL_MARKS_PRESETS.indexOf(row.fullMarks) !== -1){
+      select.value = String(row.fullMarks);
+    } else {
+      select.value = 'custom';
+      customInput.value = row.fullMarks;
+      customInput.classList.add('show');
+    }
+
+    select.addEventListener('change', function(){
+      if (select.value === 'custom'){
+        customInput.classList.add('show');
+        customInput.value = row.fullMarks;
+        customInput.focus();
+      } else {
+        customInput.classList.remove('show');
+        row.fullMarks = parseFloat(select.value);
+        updateComputed();
+      }
+    });
+
+    customInput.addEventListener('input', function(){
+      var v = parseFloat(customInput.value);
+      row.fullMarks = (customInput.value === '' || isNaN(v) || v <= 0) ? row.fullMarks : v;
+      updateComputed();
+    });
+
+    wrap.appendChild(select);
+    wrap.appendChild(customInput);
+    return wrap;
+  }
+
+  function buildRowEl(row, type){
+    var tr = document.createElement('tr');
+
+    var tdName = document.createElement('td');
+    var nameInput = document.createElement('input');
+    nameInput.className = 'subject-name-input';
+    nameInput.value = row.name;
+    nameInput.setAttribute('aria-label', 'Subject name');
+    nameInput.addEventListener('input', function(){ row.name = nameInput.value; });
+    tdName.appendChild(nameInput);
+
+    var tdCredit = document.createElement('td');
+    var creditInput = document.createElement('input');
+    creditInput.type = 'number';
+    creditInput.className = 'num-input';
+    creditInput.min = '1'; creditInput.max = '10'; creditInput.step = '1';
+    creditInput.value = row.credit;
+    creditInput.setAttribute('aria-label', 'Credit value');
+    creditInput.addEventListener('input', function(){
+      row.credit = creditInput.value === '' ? 0 : parseFloat(creditInput.value);
+      updateComputed();
+    });
+    tdCredit.appendChild(creditInput);
+
+    var tdFull = document.createElement('td');
+    tdFull.appendChild(buildFullMarksControl(row));
+
+    var tdMarks = document.createElement('td');
+    var marksInput = document.createElement('input');
+    marksInput.type = 'number';
+    marksInput.className = 'num-input no-spin';
+    marksInput.min = '0'; marksInput.step = '1';
+    marksInput.placeholder = '—';
+    if (row.marks !== null) marksInput.value = row.marks;
+    marksInput.setAttribute('aria-label', 'Marks obtained');
+    marksInput.addEventListener('input', function(){
+      if (marksInput.value === ''){ row.marks = null; }
+      else { var v = parseFloat(marksInput.value); row.marks = isNaN(v) ? null : v; }
+      updateComputed();
+    });
+    tdMarks.appendChild(marksInput);
+
+    var tdGrade = document.createElement('td');
+    var gradePill = document.createElement('span');
+    tdGrade.appendChild(gradePill);
+
+    var tdGP = document.createElement('td');
+    tdGP.className = 'gp-cell';
+
+    var tdRemove = document.createElement('td');
+    var clearBtn = document.createElement('button');
+    clearBtn.className = 'row-remove';
+    clearBtn.setAttribute('aria-label', "Clear this subject's marks");
+    clearBtn.title = 'Clear marks';
+    clearBtn.textContent = '\u2715';
+    clearBtn.addEventListener('click', function(){ row.marks = null; marksInput.value = ''; updateComputed(); });
+    tdRemove.appendChild(clearBtn);
+
+    tr.appendChild(tdName); tr.appendChild(tdCredit); tr.appendChild(tdFull);
+    tr.appendChild(tdMarks); tr.appendChild(tdGrade); tr.appendChild(tdGP); tr.appendChild(tdRemove);
+
+    row.els = { tr: tr, gradePill: gradePill, gpCell: tdGP };
+    return tr;
+  }
+
+  function renderRows(){
+    rowsBodyTheory.innerHTML = '';
+    rowsBodyPractical.innerHTML = '';
+    state.theory.forEach(function(row){ rowsBodyTheory.appendChild(buildRowEl(row, 'theory')); });
+    state.practical.forEach(function(row){ rowsBodyPractical.appendChild(buildRowEl(row, 'practical')); });
+    updateComputed();
+  }
+
+  function computeGrade(row){
+    if (row.marks === null || isNaN(row.marks) || row.fullMarks <= 0) return null;
+    var pct = (row.marks / row.fullMarks) * 100;
+    if (pct > 100) pct = 100;
+    if (pct < 0) pct = 0;
+    return gradeFor(pct, row.type === 'practical');
+  }
+
+  function summarizeSection(rows){
+    var credits = 0, gp = 0;
+    rows.forEach(function(row){
+      var g = computeGrade(row);
+      if (row.els){
+        if (g){
+          row.els.gradePill.className = 'grade-pill g' + g.point;
+          row.els.gradePill.textContent = g.letter;
+          row.els.gpCell.textContent = (row.credit * g.point).toFixed(0);
+        } else {
+          row.els.gradePill.className = '';
+          row.els.gradePill.innerHTML = '<span style="color:var(--line-dark);font-family:var(--mono);font-size:12px;">—</span>';
+          row.els.gpCell.textContent = '—';
+        }
+      }
+      if (g && row.credit > 0){ credits += row.credit; gp += row.credit * g.point; }
+    });
+    return { credits: credits, gp: gp };
+  }
+
+  function updateComputed(){
+    var theorySum = summarizeSection(state.theory);
+    var practicalSum = summarizeSection(state.practical);
+
+    document.getElementById('theorySubtotal').textContent = 'Credits ' + theorySum.credits + ' \u00b7 GP ' + theorySum.gp.toFixed(0);
+    document.getElementById('practicalSubtotal').textContent = 'Credits ' + practicalSum.credits + ' \u00b7 GP ' + practicalSum.gp.toFixed(0);
+
+    var totalCredits = theorySum.credits + practicalSum.credits;
+    var totalGP = theorySum.gp + practicalSum.gp;
+
+    var filled = 0, total = 0, anyFail = false;
+    state.theory.concat(state.practical).forEach(function(row){
+      total++;
+      var g = computeGrade(row);
+      if (g && row.credit > 0){ filled++; if (g.point === 0) anyFail = true; }
+    });
+
+    var sgpa = totalCredits > 0 ? (totalGP / totalCredits) : 0;
+
+    document.getElementById('sgpaValue').textContent = sgpa.toFixed(2);
+    document.getElementById('totalCredits').textContent = totalCredits;
+    document.getElementById('totalGP').textContent = totalGP.toFixed(0);
+    document.getElementById('totalSubjects').textContent = filled + ' / ' + total;
+
+    var note = document.getElementById('statusNote');
+    if (filled === 0){
+      note.className = 'status-note';
+      note.textContent = 'Fill in marks, full marks and credits to see your estimate update live.';
+    } else if (anyFail){
+      note.className = 'status-note fail';
+      note.textContent = 'One or more subjects fall below the pass floor (35% theory / 40% practical). SGPA shown includes these as grade F (0 points).';
+    } else if (filled < total){
+      note.className = 'status-note';
+      note.textContent = 'Estimate based on ' + filled + ' of ' + total + ' subjects entered so far. Fill in the rest for a complete SGPA.';
+    } else if (sgpa < 5){
+      note.className = 'status-note fail';
+      note.textContent = 'Estimated SGPA is below 5.0, the minimum required by BEU regulations to register for the next semester.';
+    } else {
+      note.className = 'status-note';
+      note.textContent = 'All subjects entered. This is a complete estimate for the semester — CGPA also factors in your other semesters.';
+    }
+
+    updateWatermark();
+  }
+
+  // ---- Personalization / watermark / PDF export ----
+  var nameInput = document.getElementById('studentName');
+  var rollInput = document.getElementById('studentRoll');
+  var watermarkEl = document.getElementById('watermarkPrint');
+
+  function updateWatermark(){
+    var name = (nameInput.value || '').trim();
+    var roll = (rollInput.value || '').trim();
+    var sgpa = document.getElementById('sgpaValue').textContent;
+    var dateStr = new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+
+    var parts = [];
+    if (name) parts.push(name.toUpperCase());
+    if (roll) parts.push(roll.toUpperCase());
+    parts.push('SGPA EST. ' + sgpa);
+    parts.push(dateStr);
+    var text = parts.join('  \u2022  ');
+    if (!name && !roll) text = 'UNVERIFIED PERSONAL ESTIMATE  \u2022  ' + text;
+
+    watermarkEl.innerHTML = '';
+    var positions = [8, 30, 52, 74, 96];
+    positions.forEach(function(top){
+      var line = document.createElement('div');
+      line.className = 'line';
+      line.style.top = top + '%';
+      line.textContent = text;
+      watermarkEl.appendChild(line);
+    });
+
+    document.title = (name ? name + ' — ' : '') + 'BEU SGPA Estimate (' + sgpa + ')';
+  }
+
+  nameInput.addEventListener('input', updateWatermark);
+  rollInput.addEventListener('input', updateWatermark);
+
+  document.getElementById('downloadBtn').addEventListener('click', function(){
+    updateWatermark();
+    window.print();
+  });
+
+  syncCounts();
+})();
+</script>
+</body>
+</html>
